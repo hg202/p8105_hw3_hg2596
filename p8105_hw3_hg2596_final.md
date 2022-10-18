@@ -227,3 +227,190 @@ below 2500**. Another trend is there seems to be peak minutes when the
 count goes above the average count, its difficult to know exactly what
 exact minutes but it seems their are **two high peaks** during the
 morning and later on toward the latter portion of the 24 hour period.
+
+# Problem 3
+
+``` r
+data("ny_noaa")
+```
+
+``` r
+names(ny_noaa)
+```
+
+    ## [1] "id"   "date" "prcp" "snow" "snwd" "tmax" "tmin"
+
+``` r
+head(ny_noaa)
+```
+
+    ## # A tibble: 6 × 7
+    ##   id          date        prcp  snow  snwd tmax  tmin 
+    ##   <chr>       <date>     <int> <int> <int> <chr> <chr>
+    ## 1 US1NYAB0001 2007-11-01    NA    NA    NA <NA>  <NA> 
+    ## 2 US1NYAB0001 2007-11-02    NA    NA    NA <NA>  <NA> 
+    ## 3 US1NYAB0001 2007-11-03    NA    NA    NA <NA>  <NA> 
+    ## 4 US1NYAB0001 2007-11-04    NA    NA    NA <NA>  <NA> 
+    ## 5 US1NYAB0001 2007-11-05    NA    NA    NA <NA>  <NA> 
+    ## 6 US1NYAB0001 2007-11-06    NA    NA    NA <NA>  <NA>
+
+``` r
+noaa_2 = ny_noaa %>% 
+  janitor::clean_names() %>%
+  separate(date,c("A", "B", "C")) %>%
+  select("B","C","A", everything()) %>%
+  rename(month = "B", day = "C", year = "A") %>%
+  mutate(month = month.abb[as.numeric(month)]) %>%
+  mutate(tmax = as.integer(tmax)) %>%
+  mutate(tmin = as.integer(tmin)) %>%
+  select(id, everything()) 
+
+head(noaa_2)
+```
+
+    ## # A tibble: 6 × 9
+    ##   id          month day   year   prcp  snow  snwd  tmax  tmin
+    ##   <chr>       <chr> <chr> <chr> <int> <int> <int> <int> <int>
+    ## 1 US1NYAB0001 Nov   01    2007     NA    NA    NA    NA    NA
+    ## 2 US1NYAB0001 Nov   02    2007     NA    NA    NA    NA    NA
+    ## 3 US1NYAB0001 Nov   03    2007     NA    NA    NA    NA    NA
+    ## 4 US1NYAB0001 Nov   04    2007     NA    NA    NA    NA    NA
+    ## 5 US1NYAB0001 Nov   05    2007     NA    NA    NA    NA    NA
+    ## 6 US1NYAB0001 Nov   06    2007     NA    NA    NA    NA    NA
+
+``` r
+noaa_3= 
+  noaa_2 %>% 
+  mutate(tmax_new = tmax/10) %>%
+  mutate(tmin_new = tmin/10) %>%
+  mutate(prcp_new = prcp/10) %>% 
+  mutate_if(is.double,as.integer)
+```
+
+tmax: Maximum temperature (tenths of degrees C) -\> C tmin: Minimum
+temperature (tenths of degrees C) -\> C prcp: Precipitation (tenths of
+mm) -\> m
+
+``` r
+noaa_3 %>% 
+  count(snow, name = "n_obs", sort = TRUE)
+```
+
+    ## # A tibble: 282 × 2
+    ##     snow   n_obs
+    ##    <int>   <int>
+    ##  1     0 2008508
+    ##  2    NA  381221
+    ##  3    25   31022
+    ##  4    13   23095
+    ##  5    51   18274
+    ##  6    76   10173
+    ##  7     8    9962
+    ##  8     5    9748
+    ##  9    38    9197
+    ## 10     3    8790
+    ## # … with 272 more rows
+
+\*\* Question 3;
+
+The goal is to do some exploration of this dataset. To that end, write a
+short description of the dataset, noting the size and structure of the
+data, describing some key variables, and indicating the extent to which
+missing data is an issue. Then, do or answer the following (commenting
+on the results of each):
+
+After cleaning, **ID**, **date** (month,day,year), **prcp**, **snow**,
+**snwd**, **tmax** and **tmin**.
+
+**missing** alot…?
+
+For snowfall, what are the most commonly observed values? Why?
+
+Most common is no snow days, “0”. The reason behind that can be because
+location, not too many snow days.
+
+\*Is missing data an issue??????????
+
+``` r
+noaa_3 %>%
+  mutate(tmax_new = as.numeric(tmax_new)) %>%
+  group_by(id, month) %>%
+  filter(month == "Jan"| month == "Jul") %>%
+  summarize(avg_tmax = mean(tmax_new)) %>%
+  ggplot(aes(x = id, y = avg_tmax)) + geom_point(alpha = .8) + facet_grid(. ~ month)
+```
+
+    ## `summarise()` has grouped output by 'id'. You can override using the `.groups`
+    ## argument.
+
+<img src="p8105_hw3_hg2596_final_files/figure-gfm/unnamed-chunk-16-1.png" width="90%" />
+
+Is there any observational, interpretable structure. Any outliers? try
+box plot?
+
+``` r
+skimr::skim(noaa_3)
+```
+
+|                                                  |         |
+|:-------------------------------------------------|:--------|
+| Name                                             | noaa_3  |
+| Number of rows                                   | 2595176 |
+| Number of columns                                | 12      |
+| \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_   |         |
+| Column type frequency:                           |         |
+| character                                        | 4       |
+| numeric                                          | 8       |
+| \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ |         |
+| Group variables                                  | None    |
+
+Data summary
+
+**Variable type: character**
+
+| skim_variable | n_missing | complete_rate | min | max | empty | n_unique | whitespace |
+|:--------------|----------:|--------------:|----:|----:|------:|---------:|-----------:|
+| id            |         0 |             1 |  11 |  11 |     0 |      747 |          0 |
+| month         |         0 |             1 |   3 |   3 |     0 |       12 |          0 |
+| day           |         0 |             1 |   2 |   2 |     0 |       31 |          0 |
+| year          |         0 |             1 |   4 |   4 |     0 |       30 |          0 |
+
+**Variable type: numeric**
+
+| skim_variable | n_missing | complete_rate |   mean |     sd |   p0 | p25 | p50 | p75 |  p100 | hist  |
+|:--------------|----------:|--------------:|-------:|-------:|-----:|----:|----:|----:|------:|:------|
+| prcp          |    145838 |          0.94 |  29.82 |  78.18 |    0 |   0 |   0 |  23 | 22860 | ▇▁▁▁▁ |
+| snow          |    381221 |          0.85 |   4.99 |  27.22 |  -13 |   0 |   0 |   0 | 10160 | ▇▁▁▁▁ |
+| snwd          |    591786 |          0.77 |  37.31 | 113.54 |    0 |   0 |   0 |   0 |  9195 | ▇▁▁▁▁ |
+| tmax          |   1134358 |          0.56 | 139.80 | 111.42 | -389 |  50 | 150 | 233 |   600 | ▁▂▇▆▁ |
+| tmin          |   1134420 |          0.56 |  30.29 | 104.00 | -594 | -39 |  33 | 111 |   600 | ▁▁▇▂▁ |
+| tmax_new      |   1134358 |          0.56 |  13.64 |  10.97 |  -38 |   5 |  15 |  23 |    60 | ▁▃▇▆▁ |
+| tmin_new      |   1134420 |          0.56 |   2.92 |  10.06 |  -59 |  -3 |   3 |  11 |    60 | ▁▁▇▂▁ |
+| prcp_new      |    145838 |          0.94 |   2.81 |   7.72 |    0 |   0 |   0 |   2 |  2286 | ▇▁▁▁▁ |
+
+``` r
+graph = 
+  noaa_3 %>% 
+  mutate(year = as.factor(year)) %>%
+  ggplot(aes(x = tmax_new, y = tmin_new)) + 
+  geom_hex()
+```
+
+``` r
+scatter_2 = 
+  noaa_2 %>%
+  mutate(year = as.factor(year)) %>%
+  filter(snow < 100) %>%
+  filter(snow >= 0) %>%
+  ggplot(aes(x = snow , y = year)) + geom_density_ridges(alpha = 0.5)
+```
+
+``` r
+(graph/scatter_2)
+```
+
+    ## Picking joint bandwidth of 1.03
+
+<img src="p8105_hw3_hg2596_final_files/figure-gfm/unnamed-chunk-20-1.png" width="90%" />
+
+ADD titles??

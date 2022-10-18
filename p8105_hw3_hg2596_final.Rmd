@@ -168,6 +168,113 @@ Describe any patterns or conclusions
 
 There is a lot of data, so it is very difficult to distinguish patterns.However, some of the trends is that that count on **average is below 2500**. Another trend is there seems to be peak minutes when the count goes above the average count, its difficult to know exactly what exact minutes but it seems their are **two high peaks** during the morning and later on toward the latter portion of the 24 hour period. 
 
+# Problem 3
+
+```{r}
+data("ny_noaa")
+```
+
+```{r}
+names(ny_noaa)
+head(ny_noaa)
+
+```
+
+```{r}
+noaa_2 = ny_noaa %>% 
+  janitor::clean_names() %>%
+  separate(date,c("A", "B", "C")) %>%
+  select("B","C","A", everything()) %>%
+  rename(month = "B", day = "C", year = "A") %>%
+  mutate(month = month.abb[as.numeric(month)]) %>%
+  mutate(tmax = as.integer(tmax)) %>%
+  mutate(tmin = as.integer(tmin)) %>%
+  select(id, everything()) 
+
+head(noaa_2)
+
+```
+
+```{r}
+noaa_3= 
+  noaa_2 %>% 
+  mutate(tmax_new = tmax/10) %>%
+  mutate(tmin_new = tmin/10) %>%
+  mutate(prcp_new = prcp/10) %>% 
+  mutate_if(is.double,as.integer)
+```
+
+
+tmax: Maximum temperature (tenths of degrees C) -> C
+tmin: Minimum temperature (tenths of degrees C) -> C
+prcp: Precipitation (tenths of mm) -> m 
+
+```{r}
+noaa_3 %>% 
+  count(snow, name = "n_obs", sort = TRUE)
+```
+
+
+** Question 3; 
+
+The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue. Then, do or answer the following (commenting on the results of each):
+
+After cleaning,  **ID**, **date** (month,day,year), **prcp**, **snow**, **snwd**, **tmax** and **tmin**. 
+
+**missing** alot...?
+
+For snowfall, what are the most commonly observed values? Why?
+
+Most common is no snow days, "0". The reason behind that can be because location, not too many snow days. 
+
+*Is missing data an issue??????????
+
+
+```{r}
+noaa_3 %>%
+  mutate(tmax_new = as.numeric(tmax_new)) %>%
+  group_by(id, month) %>%
+  filter(month == "Jan"| month == "Jul") %>%
+  summarize(avg_tmax = mean(tmax_new)) %>%
+  ggplot(aes(x = id, y = avg_tmax)) + geom_point(alpha = .8) + facet_grid(. ~ month)
+
+```
+
+Is there any observational, interpretable structure. Any outliers? 
+try box plot? 
+
+```{r}
+
+skimr::skim(noaa_3)
+  
+```
+
+```{r}
+graph = 
+  noaa_3 %>% 
+  mutate(year = as.factor(year)) %>%
+  ggplot(aes(x = tmax_new, y = tmin_new)) + 
+  geom_hex()
+```
+
+
+```{r}
+
+scatter_2 = 
+  noaa_2 %>%
+  mutate(year = as.factor(year)) %>%
+  filter(snow < 100) %>%
+  filter(snow >= 0) %>%
+  ggplot(aes(x = snow , y = year)) + geom_density_ridges(alpha = 0.5)
+
+```
+
+```{r}
+(graph/scatter_2)
+```
+
+ADD titles??
+
 
 
 
