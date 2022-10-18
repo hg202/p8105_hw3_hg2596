@@ -130,3 +130,100 @@ instacart %>%
 
 Note that the `echo = FALSE` parameter was added to the code chunk to
 prevent printing of the R code that generated the plot.
+
+# Problem 2
+
+``` r
+accel_1 = read_csv("./data/accel_data.csv")%>%
+  janitor::clean_names() 
+```
+
+    ## Rows: 35 Columns: 1443
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr    (1): day
+    ## dbl (1442): week, day_id, activity.1, activity.2, activity.3, activity.4, ac...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+accel_2 =  pivot_longer(
+    accel_1, 
+    activity_1:activity_1440,
+    names_to = "mins",  
+    names_prefix = "activity_",
+    values_to = "count"
+    ) %>%
+  mutate(Week_identify = ifelse(day%in%c("Saturday", "Sunday"), 2, 1)) %>%
+  mutate(day = fct_relevel(day,"Monday","Tuesday","Wednesday", "Thursday", "Friday","Saturday", "Sunday"))
+```
+
+Originally had over 1440 columns, the following variables were: **week**
+(1-5),**day_ID** (just a count), **day** (Mon-Sun), **activity_1**,
+**activity_2**…activity count following the patient 24 hours.
+
+Now, after pivoting longer, we are able to put the counts is **counts**
+making it one variable,and made a new variable **mins** to kep track
+which count came from which minute of the week.
+
+There are now 50400 observations and 6 wows
+
+``` r
+accel_3 = 
+accel_2 %>%
+  mutate(day = as.factor(day))%>%
+  group_by(week,day) %>%
+  summarize(total_activity = sum(count))
+```
+
+    ## `summarise()` has grouped output by 'week'. You can override using the
+    ## `.groups` argument.
+
+maybe ad false = true so the high can come to the beginning
+
+``` r
+accel_4 = accel_3 %>%
+  pivot_wider(
+  names_from = "day", 
+  values_from = "total_activity")
+
+accel_4 
+```
+
+    ## # A tibble: 5 × 8
+    ## # Groups:   week [5]
+    ##    week  Monday Tuesday Wednesday Thursday  Friday Saturday Sunday
+    ##   <dbl>   <dbl>   <dbl>     <dbl>    <dbl>   <dbl>    <dbl>  <dbl>
+    ## 1     1  78828. 307094.   340115.  355924. 480543.   376254 631105
+    ## 2     2 295431  423245    440962   474048  568839    607175 422018
+    ## 3     3 685910  381507    468869   371230  467420    382928 467052
+    ## 4     4 409450  319568    434460   340291  154049      1440 260617
+    ## 5     5 389080  367824    445366   549658  620860      1440 138421
+
+**Question 1; Part 2** Any trends apparent?
+
+A big drop on the weekends.
+
+Just eyeballing the table, it looks like the for week 4 and week 5 there
+is a **big drop** in counts on Saturday. On average, Mondays on average
+higher counts. Overall, though its difficult to see very apparent trends
+just based on the table.
+
+``` r
+ggplot(accel_2, aes(x = mins, y = count, color = day)) + 
+  geom_line()
+```
+
+<img src="p8105_hw3_hg2596_final_files/figure-gfm/unnamed-chunk-10-1.png" width="90%" />
+
+**Question 1; Part 3**
+
+Describe any patterns or conclusions
+
+There is a lot of data, so it is very difficult to distinguish
+patterns.However, some of the trends is that that count on **average is
+below 2500**. Another trend is there seems to be peak minutes when the
+count goes above the average count, its difficult to know exactly what
+exact minutes but it seems their are **two high peaks** during the
+morning and later on toward the latter portion of the 24 hour period.
