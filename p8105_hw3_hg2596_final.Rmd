@@ -4,7 +4,6 @@ output: github_document
 date: "2022-10-18"
 ---
 
-
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(ggridges)
@@ -101,9 +100,6 @@ instacart %>%
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-
-
-
 # Problem 2 
 
 ```{r}
@@ -124,13 +120,13 @@ accel_2 =  pivot_longer(
   mutate(Week_identify = ifelse(day%in%c("Saturday", "Sunday"), 2, 1)) %>%
   mutate(day = fct_relevel(day,"Monday","Tuesday","Wednesday", "Thursday", "Friday","Saturday", "Sunday"))
 ```
+# Part 1
 
-Originally had over 1440 columns, the following variables were: **week** (1-5),**day_ID** (just a count), **day** (Mon-Sun), **activity_1**, **activity_2**...activity count following the patient 24 hours. 
+Originally had over 1440 columns, the following variables were **week** (1-5),**day_ID** (just a count), **day** (Mon-Sun), **activity_1**, **activity_2**...and so on for following the patient for 24 hours. 
 
-Now, after pivoting longer, we are able to put the counts is **counts** making it one variable,and made a new variable **mins** to kep track which count came from which minute of the week.  
+Now, after pivoting longer, we are able to put the counts is **counts** making it one variable,and made a new variable **mins** to keep track which count came from which minute of the week.  
 
-There are now `r nrow(accel_2)` observations and `r ncol(accel_2) `  wows
-
+There are now `r nrow(accel_2)` observations and `r ncol(accel_2) `  columns. 
 
 ```{r}
 accel_3 = 
@@ -140,7 +136,6 @@ accel_2 %>%
   summarize(total_activity = sum(count))
 ```
 
-maybe ad false = true so the high can come to the beginning 
 ```{r}
 accel_4 = accel_3 %>%
   pivot_wider(
@@ -150,21 +145,21 @@ accel_4 = accel_3 %>%
 accel_4 
 ```
 
-**Question 1; Part 2**
-Any trends apparent? 
-
-A big drop on the weekends.
+# Part 2
 
 Just eyeballing the table, it looks like the for week 4 and week 5 there is a **big drop** in counts on Saturday. On average, Mondays on average higher counts. Overall, though its difficult to see very apparent trends just based on the table. 
 
 ```{r}
 ggplot(accel_2, aes(x = mins, y = count, color = day)) + 
-  geom_line()
+  geom_line() +
+   labs(
+    title = "Scatter Plot of Count over 24 hours",
+    x = "Minutes(mins)",
+    y = "Count",
+  )
 ```
 
-**Question 1; Part 3**
-
-Describe any patterns or conclusions 
+# Part 3 
 
 There is a lot of data, so it is very difficult to distinguish patterns.However, some of the trends is that that count on **average is below 2500**. Another trend is there seems to be peak minutes when the count goes above the average count, its difficult to know exactly what exact minutes but it seems their are **two high peaks** during the morning and later on toward the latter portion of the 24 hour period. 
 
@@ -172,12 +167,6 @@ There is a lot of data, so it is very difficult to distinguish patterns.However,
 
 ```{r}
 data("ny_noaa")
-```
-
-```{r}
-names(ny_noaa)
-head(ny_noaa)
-
 ```
 
 ```{r}
@@ -191,8 +180,6 @@ noaa_2 = ny_noaa %>%
   mutate(tmin = as.integer(tmin)) %>%
   select(id, everything()) 
 
-head(noaa_2)
-
 ```
 
 ```{r}
@@ -201,33 +188,29 @@ noaa_3=
   mutate(tmax_new = tmax/10) %>%
   mutate(tmin_new = tmin/10) %>%
   mutate(prcp_new = prcp/10) %>% 
-  mutate_if(is.double,as.integer)
+  mutate_if(is.double,as.integer)%>%
+  select(-tmax,-tmin,-prcp)
+  
+
+skimr::skim(noaa_3)
 ```
-
-
-tmax: Maximum temperature (tenths of degrees C) -> C
-tmin: Minimum temperature (tenths of degrees C) -> C
-prcp: Precipitation (tenths of mm) -> m 
 
 ```{r}
 noaa_3 %>% 
   count(snow, name = "n_obs", sort = TRUE)
 ```
 
+# Part 1
 
-** Question 3; 
+After cleaning,  **ID**, **month**, **day**, **year**,**snow**, **snwd**, 
+**tmax_new**, **tmin_new** and **prcp_new**. With `r nrow(noaa_3) ` 
+observations and `r ncol(noaa_3) ` columns. 
 
-The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and indicating the extent to which missing data is an issue. Then, do or answer the following (commenting on the results of each):
+Another cleaning step was dividing any variable that was measured in **tenth of a unit** by **10** so that the units were a little easier to read and understand. Leaving the units to be in Celsius and mm. 
 
-After cleaning,  **ID**, **date** (month,day,year), **prcp**, **snow**, **snwd**, **tmax** and **tmin**. 
+There are unfortunately a lot of missing data across all variables especially **tmax** and **tmin** but when looking at the variables means they seem accurate to what one would expect levels of temperature minimum and max temperatures (similarly in other variables) so I think even despite the missing observations, the data will provide good information. 
 
-**missing** alot...?
-
-For snowfall, what are the most commonly observed values? Why?
-
-Most common is no snow days, "0". The reason behind that can be because location, not too many snow days. 
-
-*Is missing data an issue??????????
+Most common value in the variable **snow** is '0'. This does logically make sense because snow only really occurs 3 months out of the 12 months in a year, the largest value being no snow day makes sense in context of a whole year. 
 
 
 ```{r}
@@ -236,44 +219,77 @@ noaa_3 %>%
   group_by(id, month) %>%
   filter(month == "Jan"| month == "Jul") %>%
   summarize(avg_tmax = mean(tmax_new)) %>%
-  ggplot(aes(x = id, y = avg_tmax)) + geom_point(alpha = .8) + facet_grid(. ~ month)
+  ggplot(aes(x = id, y = avg_tmax)) + geom_point(alpha = 0.8) +
+  facet_grid(. ~ month) +
+  labs(
+    title = "Scatter Plot of Average Max Temperture in July and January", 
+    x = "ID",
+    y = "Average Max Temperature (C)", 
+  )
 
 ```
 
-Is there any observational, interpretable structure. Any outliers? 
-try box plot? 
+# Part 2
 
-```{r}
+The main take away would be that in January we would expect average max temperatures to be low compared to July, which the plot clearly shows. As for as outliers, it is difficult to see outliers but there some to be some locations that have higher temperatures then one might expect in January. Similarly, there are some locations that have lower temperatures in July then one might expect. 
 
-skimr::skim(noaa_3)
-  
-```
+# Part 3
 
 ```{r}
 graph = 
   noaa_3 %>% 
   mutate(year = as.factor(year)) %>%
   ggplot(aes(x = tmax_new, y = tmin_new)) + 
-  geom_hex()
+  geom_hex() +
+labs(
+    title = "Hexplot of Tmax vs Tmin",
+    x = "Maxiumum Temperatue (C)",
+    y = "Minimum Temperature (C)"
+  )
 ```
 
 
 ```{r}
 
-scatter_2 = 
+density = 
   noaa_2 %>%
   mutate(year = as.factor(year)) %>%
   filter(snow < 100) %>%
   filter(snow >= 0) %>%
-  ggplot(aes(x = snow , y = year)) + geom_density_ridges(alpha = 0.5)
+  ggplot(aes(x = snow , y = year)) + geom_density_ridges(alpha = 0.5) +
+labs(
+    title = "Distribution of Snow with Density Plot",
+    x = "Snow (mm)", 
+    y = "Year"
+  ) 
+    
 
 ```
 
 ```{r}
-(graph/scatter_2)
+(graph + density)
 ```
 
-ADD titles??
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
